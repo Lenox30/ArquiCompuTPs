@@ -11,33 +11,6 @@
 //   - Franco Mamani
 //   - Lenox Graham
 //
-// Fecha de Creación: [Fecha]
-// Última Modificación: [Fecha]
-//
-// Descripción:
-//   Unidad Aritmético-Lógica (ALU) parametrizable de N bits
-//   Implementa 8 operaciones fundamentales y genera 3 flags
-//
-// Especificación:
-//   - Arquitectura: Combinacional pura (sin registros internos)
-//   - Operaciones: 8 (ADD, SUB, AND, OR, XOR, NOR, SRL, SRA)
-//   - Flags: Zero, Overflow, Carry
-//   - Parametrizable: N bits
-//
-// Notas de Diseño:
-//   - Todas las operaciones se calculan en paralelo (arquitectura paralela)
-//   - Un multiplexor selecciona el resultado según i_operacion
-//   - Los flags se generan combinacionalmente a partir del resultado
-//   - El camino crítico es la suma/resta (propagación de carry)
-//
-// Referencias:
-//   - Patterson & Hennessy, "Computer Organization and Design", 5ta Ed.
-//   - Hennessy & Patterson, "Computer Architecture: A Quantitative Approach"
-//   - MIPS32 Architecture For Programmers, Volume II
-//
-// Historial de Cambios:
-//   [Fecha] - v1.0 - Implementación inicial con 8 operaciones básicas
-//
 //==============================================================================
 // 
 //==============================================================================
@@ -53,9 +26,6 @@
 // | NOR       | 100111  | R = ~(A | B)               | Z                    |
 // | SRL       | 000010  | R = A >> B[2:0] (logical)       | Z                    |
 // | SRA       | 000011  | R = A >>> B[2:0] (arithmetic)   | Z                    |
-//==============================================================================
-// Leyenda de flags:
-//   Z = Zero, V = oVerflow, C = Carry
 //==============================================================================
 
 
@@ -74,9 +44,7 @@ module alu #(parameter N = 8)(
     output o_carry     // Carry out de la suma/resta
     );
     
-     //==========================================================================
     // SECCIÓN 1: Señales Internas y Constantes
-    //==========================================================================
     // Señales auxiliares para detectar signos
     wire signo_A, signo_B, signo_resultado;
     wire overflow_add, overflow_sub;
@@ -94,9 +62,8 @@ module alu #(parameter N = 8)(
     localparam OP_NOR = 6'b100111;
     localparam OP_SRL = 6'b000010;
     localparam OP_SRA = 6'b000011;
-     //==========================================================================
+    
     // SECCIÓN 2: Lógica Combinacional Principal (Operaciones)
-    //==========================================================================
  
     always @(*) begin
        case(i_operacion)
@@ -112,9 +79,8 @@ module alu #(parameter N = 8)(
        endcase
     end
         
-     //==========================================================================
+
     // SECCIÓN 3: Generación de Flags
-    //==========================================================================
  
  // Extracción de bits de signo
     assign signo_A = i_datoA[N-1];
