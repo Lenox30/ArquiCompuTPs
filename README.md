@@ -1,5 +1,8 @@
 # TPS DE ARQUITECTURA DE COMPUTADORAS
 Repositorio de trabajos prácticos de Arquitectura de Computadoras
+## Autores:
+- GRAHAM Lenox
+- MAMANI Franco
 
 ## Descripción  
 Este repositorio contiene los trabajos prácticos realizados para la materia **Arquitectura de Computadoras**, FCEFYN-UNC. Incluye:  
@@ -13,4 +16,5 @@ El objetivo es consolidar los distintos entregables de la materia en un solo lug
 - `DesignSource/` – código fuente del diseño 
 - `SimulationSource/` – banco de pruebas, scripts de simulación, resultados de testbench  
 - `constraints/` – archivos de restricción para el FPGA o tool de síntesis (pin-out, timing, etc.)  
+
 
