@@ -1,7 +1,6 @@
 `timescale 1ns / 1ps
 //==============================================================================
-// UART RX - VERSIÓN CORREGIDA
-// Fix: rx_done_tick es un pulso de EXACTAMENTE 1 ciclo
+// UART RX
 //==============================================================================
 
 module uart_rx #(
@@ -44,9 +43,9 @@ module uart_rx #(
             n_reg <= n_next;
             b_reg <= b_next;
             
-            // CRÍTICO: rx_done_tick es un PULSO de 1 ciclo
-            // Se activa SOLO cuando se cumplen TODAS las condiciones
-            // Se desactiva en CUALQUIER otro caso
+            // rx_done_tick es un PULSO de 1 ciclo
+            // Se activa solo cuando se cumplen todas las condiciones
+            // Se desactiva en cualquier otro caso
             rx_done_tick <= (state_reg == STOP && s_reg == 4'd15 && s_tick);
             
             // Actualizar dout cuando termina la recepción

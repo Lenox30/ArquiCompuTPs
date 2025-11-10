@@ -1,17 +1,6 @@
 `timescale 1ns / 1ps
 //==============================================================================
-// UART ALU TOP
-// FSM de 9 estados
-//==============================================================================
-// Flujo:
-//   1. IDLE: espera byte A
-//   2. RECV_A: captura A (dato ya está estable en rx_data)
-//   3. WAIT_B: espera byte B
-//   4. RECV_B: captura B
-//   5. WAIT_OP: espera operación
-//   6. RECV_OP: captura operación
-//   7. EXECUTE: ALU calcula
-//   8-10. SEND_RES, SEND_FLG, SEND_STA: envía respuesta
+// UART ALU TOP 
 //==============================================================================
 
 module uart_alu_top #(
@@ -65,9 +54,11 @@ module uart_alu_top #(
     //==========================================================================
     // UART TRANSMISOR
     //==========================================================================
-    reg tx_start;
-    reg [7:0] tx_data;
+    reg tx_start_reg;
+    reg [7:0] tx_data_reg;
     wire tx_done;
+    
+    wire tx_internal;
     
     uart_tx #(
         .DBIT(8),
@@ -75,12 +66,14 @@ module uart_alu_top #(
     ) uart_tx_inst (
         .clk(clk),
         .reset(reset),
-        .tx_start(tx_start),
+        .tx_start(tx_start_reg),
         .s_tick(tick),
-        .din(tx_data),
-        .tx(tx),
+        .din(tx_data_reg),
+        .tx(tx_internal),
         .tx_done_tick(tx_done)
     );
+    
+    assign tx = tx_internal;
     
     //==========================================================================
     // ALU
@@ -105,18 +98,21 @@ module uart_alu_top #(
     );
     
     //==========================================================================
-    // FSM DE CONTROL - 9 ESTADOS
+    // FSM DE CONTROL - Estados subdivididos para transmisión
     //==========================================================================
-    localparam S_IDLE     = 4'd0;   // Espera primer byte
-    localparam S_RECV_A   = 4'd1;   // Captura A
-    localparam S_WAIT_B   = 4'd2;   // Espera segundo byte
-    localparam S_RECV_B   = 4'd3;   // Captura B
-    localparam S_WAIT_OP  = 4'd4;   // Espera operación
-    localparam S_RECV_OP  = 4'd5;   // Captura operación
-    localparam S_EXECUTE  = 4'd6;   // ALU calcula
-    localparam S_SEND_RES = 4'd7;   // Envía resultado
-    localparam S_SEND_FLG = 4'd8;   // Envía flags
-    localparam S_SEND_STA = 4'd9;   // Envía status
+    localparam S_IDLE         = 4'd0;   // Espera primer byte
+    localparam S_RECV_A       = 4'd1;   // Captura A
+    localparam S_WAIT_B       = 4'd2;   // Espera segundo byte
+    localparam S_RECV_B       = 4'd3;   // Captura B
+    localparam S_WAIT_OP      = 4'd4;   // Espera operación
+    localparam S_RECV_OP      = 4'd5;   // Captura operación
+    localparam S_EXECUTE      = 4'd6;   // ALU calcula
+    localparam S_SEND_RES_ST  = 4'd7;   // Envía resultado - START
+    localparam S_SEND_RES_WT  = 4'd8;   // Envía resultado - WAIT
+    localparam S_SEND_FLG_ST  = 4'd9;   // Envía flags - START
+    localparam S_SEND_FLG_WT  = 4'd10;  // Envía flags - WAIT
+    localparam S_SEND_STA_ST  = 4'd11;  // Envía status - START
+    localparam S_SEND_STA_WT  = 4'd12;  // Envía status - WAIT
     
     reg [3:0] state_reg, state_next;
     
@@ -139,144 +135,138 @@ module uart_alu_top #(
             reg_A <= 0;
             reg_B <= 0;
             reg_op <= 0;
-            tx_data = 0;
         end else begin
-            // Capturar en los estados específicos de captura
             case (state_reg)
-                S_RECV_A: reg_A <= rx_data;
-                S_RECV_B: reg_B <= rx_data;
+                S_RECV_A:  reg_A <= rx_data;
+                S_RECV_B:  reg_B <= rx_data;
                 S_RECV_OP: reg_op <= rx_data[5:0];
             endcase
         end
     end
     
     //==========================================================================
-    // FSM - LÓGICA DE PRÓXIMO ESTADO Y SALIDAS (COMBINACIONAL)
+    // FSM - LÓGICA DE PRÓXIMO ESTADO (COMBINACIONAL)
     //==========================================================================
     always @(*) begin
-        // Valores por defecto
         state_next = state_reg;
-        tx_start = 1'b0;
-        tx_data = 8'h00;
         
         case (state_reg)
-            //==================================================================
-            // IDLE: Esperar primer byte (operando A)
-            //==================================================================
             S_IDLE: begin
-                if (rx_done) begin
-                    state_next = S_RECV_A;
-                    
-                end
+                if (rx_done) state_next = S_RECV_A;
             end
             
-            //==================================================================
-            // RECV_A: Capturar operando A (dato ya está en rx_data)
-            //==================================================================
             S_RECV_A: begin
-                // Captura automática en el bloque secuencial
-                // Transición inmediata (sin esperar rx_done)
                 state_next = S_WAIT_B;
             end
             
-            //==================================================================
-            // WAIT_B: Esperar segundo byte (operando B)
-            //==================================================================
             S_WAIT_B: begin
-                if (rx_done) begin
-                    state_next = S_RECV_B;
-                end
+                if (rx_done) state_next = S_RECV_B;
             end
             
-            //==================================================================
-            // RECV_B: Capturar operando B
-            //==================================================================
             S_RECV_B: begin
-                // Captura automática en el bloque secuencial
                 state_next = S_WAIT_OP;
             end
             
-            //==================================================================
-            // WAIT_OP: Esperar tercer byte (operación)
-            //==================================================================
             S_WAIT_OP: begin
-                if (rx_done) begin
-                    state_next = S_RECV_OP;
-                end
+                if (rx_done) state_next = S_RECV_OP;
             end
             
-            //==================================================================
-            // RECV_OP: Capturar operación
-            //==================================================================
             S_RECV_OP: begin
-                // Captura automática en el bloque secuencial
                 state_next = S_EXECUTE;
             end
             
-            //==================================================================
-            // EXECUTE: ALU procesa (1 ciclo)
-            //==================================================================
             S_EXECUTE: begin
-                // La ALU es combinacional, resultado listo inmediatamente
-                state_next = S_SEND_RES;
+                state_next = S_SEND_RES_ST;
             end
             
             //==================================================================
-            // SEND_RES: Enviar byte de resultado
+            // ENVÍO DE RESULTADO
             //==================================================================
-            S_SEND_RES: begin
-                tx_start = 1'b1;
-                tx_data = alu_result;
-                
-                if (tx_done) begin
-                    state_next = S_SEND_FLG;
-                end
+            S_SEND_RES_ST: begin
+                state_next = S_SEND_RES_WT;
+            end
+            
+            S_SEND_RES_WT: begin
+                if (tx_done) state_next = S_SEND_FLG_ST;
             end
             
             //==================================================================
-            // SEND_FLG: Enviar byte de flags
+            // ENVÍO DE FLAGS
             //==================================================================
-            S_SEND_FLG: begin
-                tx_start = 1'b1;
-                tx_data = {alu_zero, alu_overflow, alu_carry, 5'b00000};
-                
-                if (tx_done) begin
-                    state_next = S_SEND_STA;
-                end
+            S_SEND_FLG_ST: begin
+                state_next = S_SEND_FLG_WT;
+            end
+            
+            S_SEND_FLG_WT: begin
+                if (tx_done) state_next = S_SEND_STA_ST;
             end
             
             //==================================================================
-            // SEND_STA: Enviar byte de status y volver a IDLE
+            // ENVÍO DE STATUS
             //==================================================================
-            S_SEND_STA: begin
-                tx_start = 1'b1;
-                tx_data = 8'h55;  // Status: OK
-                
-                if (tx_done) begin
-                    state_next = S_IDLE;
-                end
+            S_SEND_STA_ST: begin
+                state_next = S_SEND_STA_WT;
             end
             
-            //==================================================================
-            // DEFAULT: Volver a IDLE (estado de seguridad)
-            //==================================================================
-            default: begin
-                state_next = S_IDLE;
+            S_SEND_STA_WT: begin
+                if (tx_done) state_next = S_IDLE;
             end
+            
+            default: state_next = S_IDLE;
         endcase
+    end
+    
+    //==========================================================================
+    // GENERACIÓN DE tx_start Y tx_data (SECUENCIAL)
+    //==========================================================================
+    reg [3:0] state_prev;
+    
+    always @(posedge clk) begin
+        if (reset) begin
+            tx_start_reg <= 1'b0;
+            tx_data_reg <= 8'h00;
+            state_prev <= S_IDLE;
+        end else begin
+            state_prev <= state_reg;
+            tx_start_reg <= 1'b0;  // Por defecto en 0
+            
+            // Detectar transiciones a estados _ST y generar pulso
+            if ((state_prev != S_SEND_RES_ST) && (state_reg == S_SEND_RES_ST)) begin
+                tx_start_reg <= 1'b1;
+                tx_data_reg <= alu_result;
+            end
+            else if ((state_prev != S_SEND_FLG_ST) && (state_reg == S_SEND_FLG_ST)) begin
+                tx_start_reg <= 1'b1;
+                tx_data_reg <= {alu_zero, alu_overflow, alu_carry, 5'b00000};
+            end
+            else if ((state_prev != S_SEND_STA_ST) && (state_reg == S_SEND_STA_ST)) begin
+                tx_start_reg <= 1'b1;
+                tx_data_reg <= 8'h55;
+            end
+            // Mantener tx_data estable durante transmisión
+            else if (state_reg == S_SEND_RES_WT) begin
+                tx_data_reg <= alu_result;
+            end
+            else if (state_reg == S_SEND_FLG_WT) begin
+                tx_data_reg <= {alu_zero, alu_overflow, alu_carry, 5'b00000};
+            end
+            else if (state_reg == S_SEND_STA_WT) begin
+                tx_data_reg <= 8'h55;
+            end
+        end
     end
     
     //==========================================================================
     // ASIGNACIÓN DE LEDs PARA DEBUG
     //==========================================================================
-    assign led[7:0] = alu_result;           // LEDs 0-7: Resultado
-    assign led[8] = alu_zero;               // LED 8: Zero flag
-    assign led[9] = alu_overflow;           // LED 9: Overflow flag
-    assign led[10] = alu_carry;             // LED 10: Carry flag
-    assign led[11] = (state_reg == S_RECV_A);  // LED 11: Debug - Capturando A
-    assign led[12] = (state_reg == S_RECV_B);  // LED 12: Debug - Capturando B
-    assign led[13] = (state_reg == S_RECV_OP); // LED 13: Debug - Capturando OP
-    assign led[14] = rx_done;               // LED 14: RX activo
-    assign led[15] = tx_done;               // LED 15: TX activo
+    assign led[7:0] = alu_result;
+    assign led[8] = alu_zero;
+    assign led[9] = alu_overflow;
+    assign led[10] = alu_carry;
+    assign led[11] = (state_reg == S_RECV_A);
+    assign led[12] = (state_reg == S_RECV_B);
+    assign led[13] = (state_reg == S_RECV_OP);
+    assign led[14] = rx_done;
+    assign led[15] = tx_done_stretched;
     
 endmodule
