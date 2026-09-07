@@ -18,3 +18,4 @@ El objetivo es consolidar los distintos entregables de la materia en un solo lug
 - `constraints/` – archivos de restricción para el FPGA o tool de síntesis (pin-out, timing, etc.)  
 
 
+Link del drive de Informes: https://drive.google.com/drive/u/1/folders/1xgkg-Dgj6rbmRQQPGyQsjf56IiQHyw08
