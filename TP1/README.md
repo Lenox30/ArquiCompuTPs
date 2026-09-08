@@ -19,3 +19,5 @@ El objetivo es consolidar los distintos entregables de la materia en un solo lug
 
 
 Link del drive de Informes: https://drive.google.com/drive/u/1/folders/1xgkg-Dgj6rbmRQQPGyQsjf56IiQHyw08
+
+Link TP3: https://docs.google.com/presentation/d/1HNugaOo9Yf0r-HovUghFOpQAP-Vp_ZGA/edit?slide=id.p1#slide=id.p1
