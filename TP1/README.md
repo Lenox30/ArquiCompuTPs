@@ -23,3 +23,5 @@ Link del drive de Informes: https://drive.google.com/drive/u/1/folders/1xgkg-Dgj
 Link TP3: https://docs.google.com/presentation/d/1HNugaOo9Yf0r-HovUghFOpQAP-Vp_ZGA/edit?slide=id.p1#slide=id.p1
 
 Link drive de enzo: https://drive.google.com/drive/u/1/folders/1upg6oNYZpzDOt33FHMeTxq1gLlquDrUB
+
+Link pagina de ejemplos vhdl: https://hdlbits.01xz.net/wiki/Main_Page
